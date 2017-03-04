@@ -1,6 +1,52 @@
 #include "stdafx.h";
 #include "LEAGUE.h"
 
+typedef int(*pf)(Team &t1, Team &t2);
+int cmpTeam(Team &t1, Team &t2)
+{
+	if (t1.getPoints() > t2.getPoints()) return 1;
+	else if (t1.getPoints() < t2.getPoints()) return -1;
+	else if (t1.getGD() > t2.getGD()) return 1;
+	else if (t1.getGD() < t2.getGD()) return -1;
+	else if (t1.getGF() > t2.getGF()) return 1;
+	else if (t1.getGF() < t2.getGF()) return -1;
+	else return 0;	
+}
+
+void swapTeam(Team &t1, Team &t2)
+{
+	Team tmp = t1;
+	t1 = t2;
+	t2 = tmp;
+}
+
+void sortTeam(Team *&teams, int teamNum, pf cmp)
+{
+	for (int i = 0; i < teamNum - 1; i++) // -1 or not does not influence.
+	{
+		for (int j = 0; j + 1 < teamNum - i; j++)
+		{
+			if (cmp(teams[j], teams[j+1]) < 0)
+			{
+				swapTeam(teams[j], teams[j+1]);
+			}
+		}
+	}
+}
+
+void League::sortLeague()
+{
+	Team * Teams = allTeams;
+	sortTeam(Teams, cur_team_num, cmpTeam);
+	for (int i = 0; i < cur_team_num; i++)
+	{
+		disp_order[i] = i;
+		rank[i] = i + 1;
+		returnRank2Team();
+	}
+}
+
+
 void swap(int &a, int &b)
 {
 	int tmp = a;
@@ -248,7 +294,7 @@ char* Team::getTeamName()
 {
 	return teamName;
 }
-int Team::getPoints()
+int Team::getPoints()const
 {
 	return points;
 }
@@ -337,6 +383,9 @@ void League::calcLeagueData()
 	for (int i = 0; i < cur_team_num; i++)
 	{
 		allTeams[i].calcTeamData();
+		//should be delete later, only for test.
+		rank[i] = i + 1;
+		returnRank2Team();
 	}
 }
 void League::calcRankRough()

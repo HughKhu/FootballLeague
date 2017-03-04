@@ -50,14 +50,16 @@ int _tmain(int argc, _TCHAR* argv[])
 		CSL.setMatchByID(id, round, home_team, away_team, goal_for, goal_against);
 	}
 	fclose(fp);
-	
+
 	//CSL.dispTable(); // all zeros except for team name.
 	CSL.calcLeagueData();
-	//CSL.dispTable(); //haven't sort. rank all zeros.
-	CSL.calcRankRough();
-	//CSL.dispTable(); //some team with the same points would not display.
-	CSL.calcRankRefineByCSL();
-	//CSL.calcRankRefineByGDGF();
+	CSL.dispTable();
+	CSL.sortLeague();
+	////CSL.dispTable(); //haven't sort. rank all zeros.
+	//CSL.calcRankRough();
+	////CSL.dispTable(); //some team with the same points would not display.
+	//CSL.calcRankRefineByCSL();
+	////CSL.calcRankRefineByGDGF();
 	CSL.dispTable();
 	
 	//CSL.dispScheduleByRound(28);//double,16 matches.need to be improved.

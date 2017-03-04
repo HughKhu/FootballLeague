@@ -60,7 +60,7 @@ class Team
 		void calcTeamData();
 		void getMatchScoreByTwoTeam(char *tname1, char *tname2, int &gf, int &ga, int &match_num);
 		char * getTeamName();
-		int getPoints();
+		int getPoints()const;
 		void getTeamData(int &pl, int &wo, int &dr, int &lo, int &gf, int &ga, int &pts);
 		int getGF();
 		int getGD();
@@ -98,6 +98,7 @@ class League
 		void setMatchByID(int id, int round, char* hteam, char*ateam, int gfor, int gagainst);
 		//calculate all teams' Data.except for rank.
 		void calcLeagueData();
+		void sortLeague();
 		void calcRankRough();
 		void calcRankRefineByGDGF();
 		void calcRankRefineByCSL();
