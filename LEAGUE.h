@@ -37,6 +37,8 @@ class Match
 		void getMatchScore(char* tName1, char* tName2, int &gf, int &ga, bool &flag);
 		void getMatch(char* hTeam, char* aTeam, int &gf, int &ga, bool &flag);
 		void dispMatch();
+		void getOppenentTeamName(char* myTeam, char*oppenetTeam);
+
 	private:
 		char homeTeam[MAX_TEAM_NAME];
 		char awayTeam[MAX_TEAM_NAME];
@@ -67,6 +69,7 @@ class Team
 		void dispTeamData();
 		void dispTeamSchedule();
 		void dispRoundMatch(int round);
+		void getOppenentName(int round,char * oppenentTeamName);
 	private:
 		char teamName[MAX_TEAM_NAME];
 		//string players[30];
@@ -98,10 +101,8 @@ class League
 		void setMatchByID(int id, int round, char* hteam, char*ateam, int gfor, int gagainst);
 		//calculate all teams' Data.except for rank.
 		void calcLeagueData();
-		void sortLeague();
-		void calcRankRough();
-		void calcRankRefineByGDGF();
-		void calcRankRefineByCSL();
+		void sortLeagueGDGF();
+		void sortLeagueCSL();
 		void calcDispOrder();
 		void returnRank2Team();
 		void dispRank();

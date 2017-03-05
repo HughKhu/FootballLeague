@@ -1,6 +1,19 @@
 #include "stdafx.h";
 #include "LEAGUE.h"
 
+int points301(int gf, int ga)
+{
+	if (gf > ga) return 3;
+	else if (gf == ga) return 1;
+	else return 0;
+}
+void updateWonDrawnLost(int gf, int ga, int &wo, int &dr, int &lo)
+{
+	if (gf > ga) wo++;
+	else if (gf == ga) dr++;
+	else lo++;
+}
+
 typedef int(*pf)(Team &t1, Team &t2);
 int cmpTeam(Team &t1, Team &t2)
 {
@@ -11,6 +24,13 @@ int cmpTeam(Team &t1, Team &t2)
 	else if (t1.getGF() > t2.getGF()) return 1;
 	else if (t1.getGF() < t2.getGF()) return -1;
 	else return 0;	
+}
+
+int cmpTeam_onlyPts(Team &t1, Team &t2)
+{
+	if (t1.getPoints() > t2.getPoints()) return 1;
+	else if (t1.getPoints() < t2.getPoints()) return -1;
+	else return 0;
 }
 
 void swapTeam(Team &t1, Team &t2)
@@ -34,7 +54,7 @@ void sortTeam(Team *&teams, int teamNum, pf cmp)
 	}
 }
 
-void League::sortLeague()
+void League::sortLeagueGDGF()
 {
 	Team * Teams = allTeams;
 	sortTeam(Teams, cur_team_num, cmpTeam);
@@ -45,7 +65,119 @@ void League::sortLeague()
 		returnRank2Team();
 	}
 }
+void League::sortLeagueCSL()
+{
+	Team * Teams = allTeams;
+	sortTeam(Teams, cur_team_num, cmpTeam_onlyPts);
+	int SamePtsIdFirst = 0, SamePtsNum = 0, cur_pts = 0, i = 0;
+	while (i < cur_team_num)
+	{
+		cur_pts = Teams[i].getPoints();
+		SamePtsIdFirst= i;
+		SamePtsNum = 1;
+		for (int j = i + 1; j < cur_team_num; j++)
+		{
+			if (Teams[j].getPoints() == cur_pts) SamePtsNum++;
+			else break;
+		}
 
+		if (SamePtsNum > 1)
+		{
+			//cmp these teams
+			Team * subTeams = Teams + SamePtsIdFirst;
+
+			int gfor, gagainst, f;
+			int *pts = new int[SamePtsNum];
+			memset(pts, 0, SamePtsNum*sizeof(int));//
+			int *gf = new int[SamePtsNum];
+			memset(gf, 0, SamePtsNum*sizeof(int));//
+			int *ga = new int[SamePtsNum];
+			memset(ga, 0, SamePtsNum*sizeof(int));//
+			int *played = new int[SamePtsNum];
+			memset(played, 0, SamePtsNum*sizeof(int));//
+			int *won = new int[SamePtsNum];
+			memset(won, 0, SamePtsNum*sizeof(int));//
+			int *drawn = new int[SamePtsNum];
+			memset(drawn, 0, SamePtsNum*sizeof(int));//
+			int *lost = new int[SamePtsNum];
+			memset(lost, 0, SamePtsNum*sizeof(int));//
+
+			cout << "--------------------" << endl;
+			for (int j = 0; j < SamePtsNum; j++)
+			{//get relative matches. 
+				for (int k = 0; k < SamePtsNum; k++)
+				{
+					if (j == k)continue;
+					subTeams[j].getMatchScoreByTwoTeam(subTeams[j].getTeamName(), subTeams[k].getTeamName(), gfor, gagainst, f);
+					if (f == 1)
+					{//f: match num; it may be larger than 1 in Korean Classic League.
+						//Because it takes more than one match in a team's home against the same opponent.
+						pts[j] += points301(gfor, gagainst);
+						pts[k] += points301(gagainst, gfor);
+						played[j]++;
+						played[k]++;
+						updateWonDrawnLost(gfor, gagainst, won[j], drawn[j], lost[j]);
+						updateWonDrawnLost(gagainst, gfor, won[k], drawn[k], lost[k]);
+						gf[j] += gfor;
+						gf[k] += gagainst;
+						ga[j] += gagainst;
+						ga[k] += gfor;
+						//disp one match
+						cout << subTeams[j].getTeamName() << "\t" << gfor << "-" << gagainst << "\t" << subTeams[k].getTeamName() << endl;
+					}
+				}
+			}
+			cout << "--------------------" << endl;
+			int *gd = new int[SamePtsNum];
+			for (int j = 0; j < SamePtsNum; j++)
+			{
+				gd[j] = gf[j] - ga[j];
+			}
+			//sort subLeague
+			int *index = new int[SamePtsNum];
+			sort3Array(pts, gd, gf, index, SamePtsNum);
+			//If pts,gd,gf all are the same.Compare points of Reserves team, then GD,GF of all the matches.
+			//In this function, I don't compare continue.
+			Team *tmpTeams = new Team[SamePtsNum];
+			for (int j = 0; j < SamePtsNum; j++)
+			{
+				tmpTeams[j] = subTeams[j];
+			}
+			for (int j = 0; j < SamePtsNum; j++)
+			{
+				subTeams[j] = tmpTeams[index[j]];	
+			}
+			//disp subLeague
+			cout << "***************************-----Sub League-----********************************" << endl;
+			cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
+			for (int j = 0; j < SamePtsNum; j++)
+			{
+				cout << j + 1 << '\t';
+				cout << subTeams[j].getTeamName() << "\t" << played[index[j]] << "\t" << won[index[j]] << "\t" << drawn[index[j]] << "\t" \
+					<< lost[index[j]] << "\t" << gf[index[j]] << "\t" << ga[index[j]] << "\t" << gd[index[j]] << "\t" \
+					<< pts[index[j]] << endl;
+			}
+			cout << "***************************--------------------********************************" << endl;
+			delete[] played;
+			delete[] pts;
+			delete[] gf;
+			delete[] ga;
+			delete[] gd;
+			delete[] index;
+			delete[] won;
+			delete[] drawn;
+			delete[] lost;
+			//sortTeam(subTeams, SamePtsNum, cmpTeam_onlyPts);
+		}
+		i = i + SamePtsNum;
+	}
+	for (int m = 0; m < cur_team_num; m++)
+	{
+		disp_order[m] = m;
+		rank[m] = m + 1;
+		returnRank2Team();
+	}
+}
 
 void swap(int &a, int &b)
 {
@@ -53,37 +185,7 @@ void swap(int &a, int &b)
 	a = b;
 	b = tmp;
 }
-void sort2Array(int *src1, int *src2, int *Rindex, int lens)
-{
-	int *src_1 = new int[lens];
-	int *src_2 = new int[lens];
-	for (int i = 0; i < lens; i++)
-	{
-		src_1[i] = src1[i];
-		src_2[i] = src2[i];
-		Rindex[i] = i;
-	}
-	for (int i = 0; i < lens; i++)
-	{
-		for (int j = 1; j < lens - i; j++)
-		{
-			if (src_1[i] < src_1[i + j])
-			{
-				swap(src_1[i], src_1[i + j]);
-				swap(src_2[i], src_2[i + j]);
-				swap(Rindex[i], Rindex[i + j]);
-			}
-			else if (src_1[i] == src_1[i + j] && src_2[i] < src_2[i + j])
-			{
-				swap(src_1[i], src_1[i + j]);
-				swap(src_2[i], src_2[i + j]);
-				swap(Rindex[i], Rindex[i + j]);
-			}
-		}
-	}
-	delete[] src_1;
-	delete[] src_2;
-}
+
 void sort3Array(int *src1, int *src2, int *src3, int *Rindex, int lens)
 {
 	int *src_1 = new int[lens];
@@ -125,19 +227,9 @@ void sort3Array(int *src1, int *src2, int *src3, int *Rindex, int lens)
 	}
 	delete[] src_1;
 	delete[] src_2;
+	delete[] src_3;
 }
-int points301(int gf, int ga)
-{
-	if (gf > ga) return 3;
-	else if (gf == ga) return 1;
-	else return 0;
-}
-void updateWonDrawnLost(int gf, int ga, int &wo, int &dr, int &lo)
-{
-	if (gf > ga) wo++;
-	else if (gf == ga) dr++;
-	else lo++;
-}
+
 
 //Match
 void Match::setBothSidesTeamName(char* hTeam, char* aTeam)
@@ -219,6 +311,18 @@ void Match::getMatch(char* hTeam, char* aTeam, int &gf, int &ga, bool &flag)
 	gf = hGoal;
 	ga = aGoal;
 	flag = tag;
+}
+void Match::getOppenentTeamName(char* myTeam, char*oppenetTeam)
+{
+	if (strcmp(homeTeam, myTeam))//different
+	{
+		strcpy(oppenetTeam, homeTeam);
+	}
+	else
+	{
+		strcpy(oppenetTeam, awayTeam);
+	
+	}
 }
 void Match::dispMatch()
 {
@@ -343,7 +447,10 @@ void Team::dispRoundMatch(int round)
 		tMatches[round - 1].dispMatch();
 	}
 }
-
+void Team::getOppenentName(int round, char *oppenentTeamName)
+{
+	tMatches[round - 1].getOppenentTeamName(teamName,oppenentTeamName);
+}
 //League
 void League::addTeam(char *tname)
 {
@@ -388,191 +495,7 @@ void League::calcLeagueData()
 		returnRank2Team();
 	}
 }
-void League::calcRankRough()
-{
-	int points[NUM_TEAM], max = 0;
-	for (int i = 0; i<cur_team_num; i++)
-	{
-		points[i] = allTeams[i].getPoints();
-		if (points[i]>max) max = points[i];
-	}
-	//sort, record allTeams[i]'s rank in rank[i];
-	int *b = new int[max + 1];
-	memset(b, 0, (max + 1)*sizeof(int));
-	int *c = new int[max + 1];
-	memset(c, 0, (max + 1)*sizeof(int));
-	memset(rank, 0, cur_team_num*sizeof(int));//
-	for (int i = 0; i<cur_team_num; i++)
-	{
-		b[points[i]]++;
-	}
-	c[max] = b[max];
-	for (int i = max - 1; i >= 0; i--)
-	{
-		c[i] = c[i + 1] + b[i];
-	}
-	for (int i = 0; i<cur_team_num; i++)
-	{
-		rank[i] = c[points[i]] + 1 - b[points[i]];
-	}
-	delete[]b;
-	delete[]c;
-	returnRank2Team();
-	calcDispOrder();
-}
-void League::calcRankRefineByGDGF()
-{
-	// calculate rank for teams with same points.
-	int count;
-	int team_same_id[NUM_TEAM];
-	for (int rnk = 1; rnk < cur_team_num + 1; rnk++)
-	{
-		count = 0;
-		for (int i = 0; i < cur_team_num; i++)
-		{
-			if (rank[i] == rnk)
-			{
-				team_same_id[count] = i;
-				count++;
-			}
-		}
-		if (count > 1)
-		{
-			//team_same_id 0~count-1
-			int *gf = new int[count];
-			int *gd = new int[count];
-			int *gdgf_index = new int[count];
-			for (int j = 0; j < count; j++)
-			{
-				gd[j] = allTeams[team_same_id[j]].getGD();
-				gf[j] = allTeams[team_same_id[j]].getGF();
-			}
-			//sort gdgf[j]-> gdgf_index[j]
-			sort2Array(gd, gf, gdgf_index, count);
-			//If gd,gf are the same. I don't compare continue.
-			for (int j = 0; j < count; j++)
-			{
-				rank[team_same_id[gdgf_index[j]]] = rnk + j;
-			}
 
-			delete[] gf;
-			delete[] gd;
-			delete[] gdgf_index;
-		}
-		memset(team_same_id, 0, cur_team_num*sizeof(int));
-	}
-	returnRank2Team();
-	calcDispOrder();
-}
-void League::calcRankRefineByCSL()
-{//Need to be improved using Points of Reserves team.
-	// calculate rank for teams with same points.
-	int count;
-	int team_same_id[NUM_TEAM];
-	for (int rnk = 1; rnk < cur_team_num + 1; rnk++)
-	{
-		count = 0;
-		for (int i = 0; i < cur_team_num; i++)
-		{
-			if (rank[i] == rnk)
-			{
-				team_same_id[count] = i;
-				count++;
-			}
-		}
-		//if count == 1,continue circulation for.
-		if (count > 1)
-		{//team_same_id, record id of teams whose total points are the same.
-			//get teams name.
-			char **TeamNameMat = new char *[count];
-			for (int i = 0; i < count; i++)
-			{
-				TeamNameMat[i] = allTeams[team_same_id[i]].getTeamName();
-			}
-			int gfor, gagainst, f;
-			int *pts = new int[count];
-			memset(pts, 0, count*sizeof(int));//
-			int *gf = new int[count];
-			memset(gf, 0, count*sizeof(int));//
-			int *ga = new int[count];
-			memset(ga, 0, count*sizeof(int));//
-			int *played = new int[count];
-			memset(played, 0, count*sizeof(int));//
-			int *won = new int[count];
-			memset(won, 0, count*sizeof(int));//
-			int *drawn = new int[count];
-			memset(drawn, 0, count*sizeof(int));//
-			int *lost = new int[count];
-			memset(lost, 0, count*sizeof(int));//
-
-			cout << "--------------------" << endl;
-			for (int i = 0; i < count; i++)
-			{//get relative matches. 
-				for (int j = 0; j < count; j++)
-				{
-					if (i == j)continue;
-					allTeams[team_same_id[i]].getMatchScoreByTwoTeam(TeamNameMat[i], TeamNameMat[j], gfor, gagainst, f);
-					if (f == 1)
-					{//f: match num; it may be larger than 1 in Korean Classic League.
-						//Because it takes more than one match in a team's home against the same opponent.
-						pts[i] += points301(gfor, gagainst);
-						pts[j] += points301(gagainst, gfor);
-						played[i]++;
-						played[j]++;
-						updateWonDrawnLost(gfor, gagainst, won[i], drawn[i], lost[i]);
-						updateWonDrawnLost(gagainst, gfor, won[j], drawn[j], lost[j]);
-						gf[i] += gfor;
-						gf[j] += gagainst;
-						ga[i] += gagainst;
-						ga[j] += gfor;
-						//disp one match
-						cout << TeamNameMat[i] << "\t" << gfor << "-" << gagainst << "\t" << TeamNameMat[j] << endl;
-					}
-				}
-			}
-			cout << "--------------------" << endl;
-			int *gd = new int[count];
-			for (int i = 0; i < count; i++)
-			{
-				gd[i] = gf[i] - ga[i];
-			}
-			//sort subLeague
-			int *index = new int[count]; 
-			sort3Array(pts, gd, gf, index, count); 
-			//If pts,gd,gf all are the same.Compare points of Reserves team, then GD,GF of all the matches.
-			//In this function, I don't compare continue.
-			for (int j = 0; j < count; j++)
-			{
-				rank[team_same_id[index[j]]] = rnk + j;
-			}
-			//disp subLeague
-			cout << "***************************-----Sub League-----********************************" << endl;
-			cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
-			for (int i = 0; i < count; i++)
-			{
-				allTeams[team_same_id[index[i]]].getTeamName();
-				cout << i + 1 << '\t';
-				cout << TeamNameMat[index[i]] << "\t" << played[index[i]] << "\t" << won[index[i]] << "\t" << drawn[index[i]] << "\t" \
-					<< lost[index[i]] << "\t" << gf[index[i]] << "\t" << ga[index[i]] << "\t" << gd[index[i]] << "\t" \
-					<< pts[index[i]] << endl;
-			}
-			cout << "***************************--------------------********************************" << endl;
-			delete[] TeamNameMat;
-			delete[] pts;
-			delete[] gf;
-			delete[] ga;
-			delete[] gd;
-			delete[] index;
-			delete[] won;
-			delete[] drawn;
-			delete[] lost;
-		}
-		//above: more than 2 teams have same points
-		memset(team_same_id, 0, cur_team_num*sizeof(int));//
-	}
-	returnRank2Team();
-	calcDispOrder();
-}
 void League::returnRank2Team()
 {
 	for (int i = 0; i<cur_team_num; i++)
@@ -649,9 +572,26 @@ void League::dispScheduleByRound(int rnd)
 		return;
 	}
 	cout << "------Round "<<rnd<<"-------" << endl;
+	char *teamName = new char[MAX_TEAM_NAME];
+	int team_appear_id[NUM_TEAM];
+	int team_appear_num = 0;
+	bool tag = false;
 	for (int i = 0; i < cur_team_num; i++)
 	{
-		allTeams[i].dispRoundMatch(rnd);
+		tag = false;
+		for (int j = 0; j < team_appear_num; j++)
+		{
+			if (i == team_appear_id[j]) { tag = true; break; }
+		}
+		if (tag) continue;
+		else
+		{
+			allTeams[i].dispRoundMatch(rnd);
+			allTeams[i].getOppenentName(rnd,teamName);
+			team_appear_id[team_appear_num] = getTeamID(teamName);
+			team_appear_num++;
+		}		
 	}
 	cout << "--------------------" << endl;
+	delete[]teamName;
 }

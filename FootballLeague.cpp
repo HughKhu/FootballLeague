@@ -51,21 +51,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	fclose(fp);
 
-	//CSL.dispTable(); // all zeros except for team name.
 	CSL.calcLeagueData();
+	//CSL.dispTable();
+
+	CSL.sortLeagueCSL();
 	CSL.dispTable();
-	CSL.sortLeague();
-	////CSL.dispTable(); //haven't sort. rank all zeros.
-	//CSL.calcRankRough();
-	////CSL.dispTable(); //some team with the same points would not display.
-	//CSL.calcRankRefineByCSL();
-	////CSL.calcRankRefineByGDGF();
+
+	CSL.sortLeagueGDGF();
 	CSL.dispTable();
 	
-	//CSL.dispScheduleByRound(28);//double,16 matches.need to be improved.
+	CSL.dispScheduleByRound(1);//double,16 matches.need to be improved.
 	//CSL.dispScheduleAll();
 
-	//CSL.dispOneTeam("¸»Á¦");
+	//CSL.dispOneTeam("ºã´ó");
 	system("PAUSE");
 	return 0;
 }
