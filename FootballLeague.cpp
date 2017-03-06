@@ -55,15 +55,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	//CSL.dispTable();
 
 	CSL.sortLeagueCSL();
-	CSL.dispTable();
+	//CSL.dispTable();
 
-	CSL.sortLeagueGDGF();
+	//CSL.sortLeagueGDGF();
 	CSL.dispTable();
 	
-	CSL.dispScheduleByRound(1);//double,16 matches.need to be improved.
+	//CSL.dispScheduleByRound(1);
 	//CSL.dispScheduleAll();
 
-	//CSL.dispOneTeam("ºã´ó");
+	//CSL.dispOneTeam("¸»Á¦");
 	system("PAUSE");
 	return 0;
 }
