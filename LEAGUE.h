@@ -7,15 +7,21 @@ using namespace std;
 #define NUM_TEAM 16
 #define MATCHES_PER_ROUND 2
 #define MAX_TEAM_NAME  32
+#define MAX_FILENAME 40
 #define NEG_INF -500
 #define NotYetLabel 99
 #define MAX_RECORDS 100
-
-void swap(int &a, int &b);
-void sort2Array(int *src1, int *src2, int *Rindex, int lens);
-void sort3Array(int *src1, int *src2, int *src3, int *Rindex, int lens);
-int points301(int gf, int ga);
-void updateWonDrawnLost(int gf, int ga, int &wo, int &dr, int &lo);
+typedef struct
+{
+	int played;
+	int won;
+	int drawn;
+	int lost;
+	int gf;
+	int ga;
+	int gd;
+	int pts;
+}TeamStats;
 
 class Match
 {
@@ -36,8 +42,9 @@ class Match
 		void getMatchScore(char* tName, int &gf, int &ga, bool &flag);
 		void getMatchScore(char* tName1, char* tName2, int &gf, int &ga, bool &flag);
 		void getMatch(char* hTeam, char* aTeam, int &gf, int &ga, bool &flag);
-		void dispMatch();
 		void getOppenentTeamName(char* myTeam, char*oppenetTeam);
+		void dispMatch();
+		
 
 	private:
 		char homeTeam[MAX_TEAM_NAME];
@@ -50,39 +57,52 @@ class Match
 class Team
 {
 	public:
-		Team() :rank(0), played(0), won(0), drawn(0), lost(0), GF(0), GA(0), GD(0), points(0)
-		{ strcpy(teamName, "\0"); }
-		Team(char* tName):rank(0),played(0),won(0),drawn(0),lost(0),GF(0),GA(0),GD(0),points(0)
-		{strcpy(teamName,tName);}
+		Team() :rank(0), ReserveTeamPts(0)
+		{
+			strcpy(teamName, "\0");
+			memset(&MainStats, 0, sizeof(TeamStats));
+			memset(&SubStats, 0, sizeof(TeamStats));
+		}
+		Team(char* tName) :rank(0), ReserveTeamPts(0)
+		{
+			strcpy(teamName,tName);
+			memset(&MainStats, 0, sizeof(TeamStats));
+			memset(&SubStats, 0, sizeof(TeamStats));
+		}
 		void setTeamName(char* tName);
 		void setMatchByRound(int round, char* ht, char* at, int hg, int ag);
-		//Rank Setting is to be improved.
 		void setRank(int rnk);
-		//calculate Team Data except for rank.
-		void calcTeamData();
+		void setReserveTeamPts(int RTPts);
+		int getReserveTeamPts()const;
+
 		void getMatchScoreByTwoTeam(char *tname1, char *tname2, int &gf, int &ga, int &match_num);
 		char * getTeamName();
-		int getPoints()const;
+		void getOppenentName(int round, char* oppenentTeamName);
 		void getTeamData(int &pl, int &wo, int &dr, int &lo, int &gf, int &ga, int &pts);
-		int getGF();
-		int getGD();
-		void dispTeamData();
+		void calcTeamData();
+
+		int getPoints()const;
+		int getSubPoints()const;
+		int getGD()const;
+		int getSubGD()const;
+		int getGF()const;
+		int getSubGF()const;
+		void dispTeamData();	
+		void dispTeamSubData();
+
+		void updateSubStats(int gf, int ga);
 		void dispTeamSchedule();
 		void dispRoundMatch(int round);
-		void getOppenentName(int round,char * oppenentTeamName);
+		
 	private:
 		char teamName[MAX_TEAM_NAME];
 		//string players[30];
 		Match tMatches[MAX_ROUNDS];
 		int rank;
-		int played;
-		int won;
-		int drawn;
-		int lost;
-		int GF;
-		int GA;
-		int GD;
-		int points;
+		int ReserveTeamPts;
+		TeamStats MainStats;
+		TeamStats SubStats;
+
 };
 class League
 {
@@ -94,15 +114,24 @@ class League
 				rank[i] = i + 1;
 			}
 		}
-		void addTeam(char *tname);
 		bool existTeam(char *tname);
+		void addTeam(char *tname);
+
 		int getTeamID(char* tname);
+		int getTeamNum();
+		int getTeamPointsByID(int id);
+		char* getTeamNameByID(int id);
+		void setReserveTeamPtsByTeamName(char* tName, int RTPts);
+
 		void setMatchByID(int id, int round, char* hteam, char*ateam, int gfor, int gagainst);
-		//calculate all teams' Data.except for rank.
 		void calcLeagueData();
+
 		void sortLeagueGDGF();
 		void sortLeagueCSL();
+		void sortLeagueCSL_Simple();
+		void updateSamePtsTeamSubStats();
 		void returnRank2Team();
+
 		void dispOneTeam(char* tname);
 		void dispTable();
 		void dispScheduleAll();
