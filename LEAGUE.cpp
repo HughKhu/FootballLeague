@@ -111,6 +111,7 @@ void League::sortLeagueCSL()
 {
 	Team * Teams = allTeams;
 	sortTeam(Teams, cur_team_num, cmpTeam_onlyPts);
+	for (int i = 0; i < cur_team_num; i++) rank[i] = i + 1;//rough rank
 	int SamePtsIdFirst = 0, SamePtsNum = 0, cur_pts = 0, i = 0;
 	while (i < cur_team_num)
 	{
@@ -176,12 +177,22 @@ void League::sortLeagueCSL()
 			Team *tmpTeams = new Team[SamePtsNum];
 			for (int j = 0; j < SamePtsNum; j++) tmpTeams[j] = subTeams[j];
 			for (int j = 0; j < SamePtsNum; j++) subTeams[j] = tmpTeams[index[j]];
+			//could have same rank.
+			int pre_id = 0;
+			for (int id = 1; id < SamePtsNum; id++)
+			{
+				if (cmpSamePts(StatsSet[pre_id], StatsSet[id]) == 0) 
+					rank[SamePtsIdFirst + id] = SamePtsIdFirst + pre_id + 1;
+				else {
+					pre_id = id;
+				}
+			}
 			//disp subLeague
 			cout << "***************************-----Sub League-----********************************" << endl;
 			cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
 			for (int j = 0; j < SamePtsNum; j++)
 			{
-				cout << j + 1 << '\t';
+				cout << rank[SamePtsIdFirst+j] << '\t';
 				cout << subTeams[j].getTeamName() << "\t" << StatsSet[j].played << "\t" << StatsSet[j].won << "\t" << StatsSet[j].drawn << "\t" \
 					<< StatsSet[j].lost << "\t" << StatsSet[j].gf << "\t" << StatsSet[j].ga << "\t" << StatsSet[j].gd << "\t" \
 					<< StatsSet[j].pts << endl;
@@ -189,14 +200,13 @@ void League::sortLeagueCSL()
 			cout << "***************************--------------------********************************" << endl;
 		}
 	}
-	for (int m = 0; m < cur_team_num; m++) rank[m] = m + 1;
 	returnRank2Team();
 }
 void League::sortLeagueGDGF()
 {
 	Team * Teams = allTeams;
 	sortTeam(Teams, cur_team_num, cmpTeam);
-	
+	//could have same rank.
 	rank[0] = 1;
 	int pre_i = 0;
 	for (int i = 1; i < cur_team_num; i++)
