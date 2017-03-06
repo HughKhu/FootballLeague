@@ -13,8 +13,43 @@ void updateWonDrawnLost(int gf, int ga, int &wo, int &dr, int &lo)
 	else if (gf == ga) dr++;
 	else lo++;
 }
+typedef struct
+{
+	int played;
+	int won;
+	int drawn;
+	int lost;
+	int pts;
+	int gf;
+	int ga;
+	int gd;
+	//int allpts;
+	int allgd;
+	int allgf;
+}TeamStats;
+void dispStats(TeamStats stats)
+{
+	cout << stats.pts << " " << stats.gd << " " << stats.gf << " " <<\
+		stats.allgd << " " << stats.allgf << endl;
+}
 
-typedef int(*pf)(Team &t1, Team &t2);
+typedef int(*cmpMethodStats)(TeamStats &s1, TeamStats &s2);
+int cmpSamePts(TeamStats &s1, TeamStats &s2)
+{
+	if (s1.pts > s2.pts) return 1;
+	else if (s1.pts < s2.pts) return -1;
+	else if (s1.gd > s2.gd) return 1;
+	else if (s1.gd < s2.gd) return -1;
+	else if (s1.gf > s2.gf) return 1;
+	else if (s1.gf < s2.gf) return -1;
+	else if (s1.allgd > s2.allgd) return 1;
+	else if (s1.allgd < s2.allgd) return -1;
+	else if (s1.allgf > s2.allgf) return 1;
+	else if (s1.allgf < s2.allgf) return -1;
+	else return 0;
+}
+
+typedef int(*cmpMethodTeam)(Team &t1, Team &t2);
 int cmpTeam(Team &t1, Team &t2)
 {
 	if (t1.getPoints() > t2.getPoints()) return 1;
@@ -25,7 +60,6 @@ int cmpTeam(Team &t1, Team &t2)
 	else if (t1.getGF() < t2.getGF()) return -1;
 	else return 0;	
 }
-
 int cmpTeam_onlyPts(Team &t1, Team &t2)
 {
 	if (t1.getPoints() > t2.getPoints()) return 1;
@@ -39,6 +73,12 @@ void swapTeam(Team &t1, Team &t2)
 	t1 = t2;
 	t2 = tmp;
 }
+void swapStats(TeamStats &s1, TeamStats &s2)
+{
+	TeamStats tmp = s1;
+	s1 = s2;
+	s2 = tmp;
+}
 void swap(int &a, int &b)
 {
 	int tmp = a;
@@ -46,24 +86,7 @@ void swap(int &a, int &b)
 	b = tmp;
 }
 
-typedef struct
-{
-	int played;
-	int won;
-	int drawn;
-	int lost;
-	int pts;
-	int gf;
-	int ga;
-	int gd;
-}TeamStats;
-void swapStats(TeamStats &s1, TeamStats &s2)
-{
-	TeamStats tmp = s1;
-	s1 = s2;
-	s2 = tmp;
-}
-void sortTeam(Team *&teams, int teamNum, pf cmp)
+void sortTeam(Team *&teams, int teamNum, cmpMethodTeam cmp)
 {
 	for (int i = 0; i < teamNum - 1; i++) // -1 or not does not influence.
 	{
@@ -76,39 +99,26 @@ void sortTeam(Team *&teams, int teamNum, pf cmp)
 		}
 	}
 }
-
-void sortUseStruct(TeamStats* &teamStatistic, int *Rindex, int SamePtsNum)
+void sortTeamSamePts(TeamStats* &StatsSet, int *index, int SamePtsNum,cmpMethodStats cmp)
 {
 	int lens = SamePtsNum;
 	for (int i = 0; i < lens; i++)
 	{
-		Rindex[i] = i;
+		index[i] = i;
 	}
-	for (int i = 0; i < lens; i++)
+	for (int i = 0; i < lens - 1; i++) // -1 or not does not influence.
 	{
-		for (int j = 1; j < lens - i; j++)
+		for (int j = 0; j + 1 < lens - i; j++)
 		{
-			if (teamStatistic[i].pts < teamStatistic[i+j].pts)
+			if (cmp(StatsSet[j], StatsSet[j + 1]) < 0)
 			{
-				swapStats(teamStatistic[i], teamStatistic[i + j]);
-				swap(Rindex[i], Rindex[i + j]);
-			}
-			else if (teamStatistic[i].pts == teamStatistic[i + j].pts)
-			{
-				if (teamStatistic[i].gd < teamStatistic[i + j].gd)
-				{
-					swapStats(teamStatistic[i], teamStatistic[i + j]);
-					swap(Rindex[i], Rindex[i + j]);
-				}
-				else if (teamStatistic[i].gd == teamStatistic[i + j].gd && teamStatistic[i].gf < teamStatistic[i + j].gf)
-				{
-					swapStats(teamStatistic[i], teamStatistic[i + j]);
-					swap(Rindex[i], Rindex[i + j]);
-				}
+				swapStats(StatsSet[j], StatsSet[j + 1]);
+				swap(index[j], index[j + 1]);
 			}
 		}
 	}
 }
+
 void League::sortLeagueCSL()
 {
 	Team * Teams = allTeams;
@@ -129,8 +139,8 @@ void League::sortLeagueCSL()
 		{
 			//cmp these teams
 			Team * subTeams = Teams + SamePtsIdFirst;
-			TeamStats * teamStatistic = new TeamStats[SamePtsNum];
-			memset(teamStatistic, 0, SamePtsNum*sizeof(TeamStats));
+			TeamStats * StatsSet = new TeamStats[SamePtsNum];
+			memset(StatsSet, 0, SamePtsNum*sizeof(TeamStats));
 			int gfor, gagainst, f;
 			cout << "--------------------" << endl;
 			for (int j = 0; j < SamePtsNum; j++)
@@ -142,16 +152,16 @@ void League::sortLeagueCSL()
 					if (f == 1)
 					{//f: match num; it may be larger than 1 in Korean Classic League.
 						//Because it takes more than one match in a team's home against the same opponent.
-						teamStatistic[j].pts += points301(gfor, gagainst);
-						teamStatistic[k].pts += points301(gagainst, gfor);
-						teamStatistic[j].played++;
-						teamStatistic[k].played++;
-						updateWonDrawnLost(gfor, gagainst, teamStatistic[j].won, teamStatistic[j].drawn, teamStatistic[j].lost);
-						updateWonDrawnLost(gagainst, gfor, teamStatistic[k].won, teamStatistic[k].drawn, teamStatistic[k].lost);
-						teamStatistic[j].gf += gfor;
-						teamStatistic[k].gf += gagainst;
-						teamStatistic[j].ga += gagainst;
-						teamStatistic[k].ga += gfor;
+						StatsSet[j].pts += points301(gfor, gagainst);
+						StatsSet[k].pts += points301(gagainst, gfor);
+						StatsSet[j].played++;
+						StatsSet[k].played++;
+						updateWonDrawnLost(gfor, gagainst, StatsSet[j].won, StatsSet[j].drawn, StatsSet[j].lost);
+						updateWonDrawnLost(gagainst, gfor, StatsSet[k].won, StatsSet[k].drawn, StatsSet[k].lost);
+						StatsSet[j].gf += gfor;
+						StatsSet[k].gf += gagainst;
+						StatsSet[j].ga += gagainst;
+						StatsSet[k].ga += gfor;
 						//disp one match
 						cout << subTeams[j].getTeamName() << "\t" << gfor << "-" \
 							<< gagainst << "\t" << subTeams[k].getTeamName() << endl;
@@ -161,11 +171,13 @@ void League::sortLeagueCSL()
 			cout << "--------------------" << endl;
 			for (int j = 0; j < SamePtsNum; j++)
 			{
-				teamStatistic[j].gd = teamStatistic[j].gf - teamStatistic[j].ga;
+				StatsSet[j].gd = StatsSet[j].gf - StatsSet[j].ga;
+				StatsSet[j].allgd = subTeams[j].getGD();
+				StatsSet[j].allgf = subTeams[j].getGF();
 			}
 			//sort subLeague
 			int *index = new int[SamePtsNum];
-			sortUseStruct(teamStatistic, index, SamePtsNum);
+			sortTeamSamePts(StatsSet, index, SamePtsNum, cmpSamePts);
 			//If pts,gd,gf all are the same.Compare points of Reserves team, then GD,GF of all the matches.
 			//In this function, I don't compare continue.
 			Team *tmpTeams = new Team[SamePtsNum];
@@ -183,9 +195,9 @@ void League::sortLeagueCSL()
 			for (int j = 0; j < SamePtsNum; j++)
 			{
 				cout << j + 1 << '\t';
-				cout << subTeams[j].getTeamName() << "\t" << teamStatistic[j].played << "\t" << teamStatistic[j].won << "\t" << teamStatistic[j].drawn << "\t" \
-					<< teamStatistic[j].lost << "\t" << teamStatistic[j].gf << "\t" << teamStatistic[j].ga << "\t" << teamStatistic[j].gd << "\t" \
-					<< teamStatistic[j].pts << endl;
+				cout << subTeams[j].getTeamName() << "\t" << StatsSet[j].played << "\t" << StatsSet[j].won << "\t" << StatsSet[j].drawn << "\t" \
+					<< StatsSet[j].lost << "\t" << StatsSet[j].gf << "\t" << StatsSet[j].ga << "\t" << StatsSet[j].gd << "\t" \
+					<< StatsSet[j].pts << endl;
 			}
 			cout << "***************************--------------------********************************" << endl;
 			//sortTeam(subTeams, SamePtsNum, cmpTeam_onlyPts);
