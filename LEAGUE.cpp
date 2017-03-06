@@ -1,18 +1,6 @@
 #include "stdafx.h";
 #include "LEAGUE.h"
 
-int points301(int gf, int ga)
-{
-	if (gf > ga) return 3;
-	else if (gf == ga) return 1;
-	else return 0;
-}
-void updateWonDrawnLost(int gf, int ga, int &wo, int &dr, int &lo)
-{
-	if (gf > ga) wo++;
-	else if (gf == ga) dr++;
-	else lo++;
-}
 typedef struct
 {
 	int played;
@@ -134,10 +122,9 @@ void League::sortLeagueCSL()
 			if (Teams[j].getPoints() == cur_pts) SamePtsNum++;
 			else break;
 		}
-
+		i = i + SamePtsNum;
 		if (SamePtsNum > 1)
-		{
-			//cmp these teams
+		{//cmp these teams
 			Team * subTeams = Teams + SamePtsIdFirst;
 			TeamStats * StatsSet = new TeamStats[SamePtsNum];
 			memset(StatsSet, 0, SamePtsNum*sizeof(TeamStats));
@@ -152,16 +139,21 @@ void League::sortLeagueCSL()
 					if (f == 1)
 					{//f: match num; it may be larger than 1 in Korean Classic League.
 						//Because it takes more than one match in a team's home against the same opponent.
-						StatsSet[j].pts += points301(gfor, gagainst);
-						StatsSet[k].pts += points301(gagainst, gfor);
 						StatsSet[j].played++;
 						StatsSet[k].played++;
-						updateWonDrawnLost(gfor, gagainst, StatsSet[j].won, StatsSet[j].drawn, StatsSet[j].lost);
-						updateWonDrawnLost(gagainst, gfor, StatsSet[k].won, StatsSet[k].drawn, StatsSet[k].lost);
 						StatsSet[j].gf += gfor;
 						StatsSet[k].gf += gagainst;
 						StatsSet[j].ga += gagainst;
 						StatsSet[k].ga += gfor;
+						if (gfor > gagainst){
+							StatsSet[j].pts += 3; StatsSet[j].won++;
+							StatsSet[k].lost++;}
+						else if (gfor == gagainst) {
+							StatsSet[j].pts += 1; StatsSet[j].drawn++;
+							StatsSet[k].pts += 1; StatsSet[k].drawn++;}
+						else {
+							StatsSet[j].lost++;
+							StatsSet[k].pts += 3; StatsSet[k].won++;}
 						//disp one match
 						cout << subTeams[j].getTeamName() << "\t" << gfor << "-" \
 							<< gagainst << "\t" << subTeams[k].getTeamName() << endl;
@@ -178,17 +170,12 @@ void League::sortLeagueCSL()
 			//sort subLeague
 			int *index = new int[SamePtsNum];
 			sortTeamSamePts(StatsSet, index, SamePtsNum, cmpSamePts);
-			//If pts,gd,gf all are the same.Compare points of Reserves team, then GD,GF of all the matches.
-			//In this function, I don't compare continue.
+			//If pts,gd,gf all are the same.Compare points of Reserves team, 
+			//then GD,GF of all the matches.
+			//In this function, I neglect comparison of Reserves teams.
 			Team *tmpTeams = new Team[SamePtsNum];
-			for (int j = 0; j < SamePtsNum; j++)
-			{
-				tmpTeams[j] = subTeams[j];
-			}
-			for (int j = 0; j < SamePtsNum; j++)
-			{
-				subTeams[j] = tmpTeams[index[j]];
-			}
+			for (int j = 0; j < SamePtsNum; j++) tmpTeams[j] = subTeams[j];
+			for (int j = 0; j < SamePtsNum; j++) subTeams[j] = tmpTeams[index[j]];
 			//disp subLeague
 			cout << "***************************-----Sub League-----********************************" << endl;
 			cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
@@ -200,27 +187,26 @@ void League::sortLeagueCSL()
 					<< StatsSet[j].pts << endl;
 			}
 			cout << "***************************--------------------********************************" << endl;
-			//sortTeam(subTeams, SamePtsNum, cmpTeam_onlyPts);
 		}
-		i = i + SamePtsNum;
 	}
-	for (int m = 0; m < cur_team_num; m++)
-	{
-		disp_order[m] = m;
-		rank[m] = m + 1;
-		returnRank2Team();
-	}
+	for (int m = 0; m < cur_team_num; m++) rank[m] = m + 1;
+	returnRank2Team();
 }
 void League::sortLeagueGDGF()
 {
 	Team * Teams = allTeams;
 	sortTeam(Teams, cur_team_num, cmpTeam);
-	for (int i = 0; i < cur_team_num; i++)
+	
+	rank[0] = 1;
+	int pre_i = 0;
+	for (int i = 1; i < cur_team_num; i++)
 	{
-		disp_order[i] = i;
-		rank[i] = i + 1;
-		returnRank2Team();
+		if (cmpTeam(Teams[pre_i],Teams[i]) == 0) rank[i] = pre_i + 1;
+		else {
+			rank[i] = i + 1; pre_i = i;
+		}
 	}
+	returnRank2Team();
 }
 
 
@@ -494,30 +480,7 @@ void League::returnRank2Team()
 		allTeams[i].setRank(rank[i]);
 	}
 }
-void League::calcDispOrder()
-{
-	for (int i = 0; i < cur_team_num; i++)
-	{
-		disp_order[i] = -1;
-	}
-	for (int i = 0; i < cur_team_num; i++)
-	{//rank[i] : 1~16
-		if (rank[i] < 1 || rank[i]>16)
-		{
-			cout << "league.rank[i] error!" << endl;
-			break;
-		}
-		disp_order[rank[i] - 1] = i;
-	}
-}
-void League::dispRank()
-{
-	for (int i = 0; i < cur_team_num; i++)
-	{
-		cout << rank[i] << " ";
-	}
-	cout << endl;
-}
+
 void League::dispOneTeam(char* tname)
 {
 	if (existTeam(tname))
@@ -538,15 +501,9 @@ void League::dispTable()
 	cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
 	for (int i = 0; i < cur_team_num; i++)
 	{
-		if (disp_order[i] < 0 || disp_order[i] > NUM_TEAM)
-		{ cout << i + 1 << " rank error! Team rank repeat and No team ranks " << i + 1 << endl; continue; }
-		allTeams[disp_order[i]].dispTeamData();
+		allTeams[i].dispTeamData();
 	}
 	cout << "***************************--------------------********************************" << endl;
-	/*for (int i = 0; i < cur_team_num; i++)
-	{
-	allTeams[i].dispTeamData();
-	}*/
 }
 void League::dispScheduleAll()
 {

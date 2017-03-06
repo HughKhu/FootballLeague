@@ -92,7 +92,6 @@ class League
 			for (int i = 0; i < NUM_TEAM; i++)
 			{
 				rank[i] = i + 1;
-				disp_order[i] = i;
 			}
 		}
 		void addTeam(char *tname);
@@ -103,9 +102,7 @@ class League
 		void calcLeagueData();
 		void sortLeagueGDGF();
 		void sortLeagueCSL();
-		void calcDispOrder();
 		void returnRank2Team();
-		void dispRank();
 		void dispOneTeam(char* tname);
 		void dispTable();
 		void dispScheduleAll();
@@ -113,7 +110,6 @@ class League
 	private:
 		Team allTeams[NUM_TEAM];
 		int rank[NUM_TEAM];
-		int disp_order[NUM_TEAM];//for Output order.
 		int cur_team_num;
 };
 

@@ -55,14 +55,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	//CSL.dispTable();
 
 	CSL.sortLeagueCSL();
-	//CSL.dispTable();
-
 	//CSL.sortLeagueGDGF();
 	CSL.dispTable();
 	
 	//CSL.dispScheduleByRound(1);
 	//CSL.dispScheduleAll();
-
 	//CSL.dispOneTeam("¸»Á¦");
 	system("PAUSE");
 	return 0;
