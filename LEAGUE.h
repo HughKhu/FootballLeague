@@ -112,6 +112,7 @@ class League
 			for (int i = 0; i < NUM_TEAM; i++)
 			{
 				rank[i] = i + 1;
+				dispOrder[i] = i;
 			}
 		}
 		bool existTeam(char *tname);
@@ -129,7 +130,8 @@ class League
 		void sortLeagueGDGF();
 		void sortLeagueCSL();
 		void sortLeagueCSL_Simple();
-		void updateSamePtsTeamSubStats();
+		void updateSamePtsTeamSubStats(bool DispSub);
+		void setDispOrder(int arr[], int num, int odr[]);
 		void returnRank2Team();
 
 		void dispOneTeam(char* tname);
@@ -139,6 +141,7 @@ class League
 	private:
 		Team allTeams[NUM_TEAM];
 		int rank[NUM_TEAM];
+		int dispOrder[NUM_TEAM];
 		int cur_team_num;
 };
 

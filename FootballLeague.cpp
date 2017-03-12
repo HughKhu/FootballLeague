@@ -1,7 +1,7 @@
 // FootballLeague.cpp : 定义控制台应用程序的入口点。
 //
 
-#include "stdafx.h"
+//#include "stdafx.h"
 
 #include <fstream>
 #include <streambuf>
@@ -10,7 +10,7 @@
 
 
 
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char* argv[])
 {
 	int round, goal_for, goal_against,id;
 	char home_team[MAX_TEAM_NAME], away_team[MAX_TEAM_NAME];
@@ -103,9 +103,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	cout << "***********************-----Main League Table-----*****************************" << endl;
 	CSL.dispTable();
 	
-	//CSL.dispScheduleByRound(1);
+	CSL.dispScheduleByRound(1);
 	//CSL.dispScheduleAll();
-	//CSL.dispOneTeam("富力");
+	CSL.dispOneTeam("富力");
 	system("PAUSE");
 	return 0;
 }

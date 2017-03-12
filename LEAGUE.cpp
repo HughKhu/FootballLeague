@@ -1,4 +1,3 @@
-#include "stdafx.h";
 #include "LEAGUE.h"
 
 typedef int(*cmpMethodTeam)(Team &t1, Team &t2);
@@ -31,184 +30,193 @@ int cmpTeamCSL(Team &t1, Team &t2)
 	else if (t1.getGF() < t2.getGF()) return -1;
 	else return 0;
 }
-int cmpTeam_onlyPts(Team &t1, Team &t2)
-{
-	if (t1.getPoints() > t2.getPoints()) return 1;
-	else if (t1.getPoints() < t2.getPoints()) return -1;
-	else return 0;
-}
 
-void swapTeam(Team &t1, Team &t2)
-{
-	Team tmp = t1;
-	t1 = t2;
-	t2 = tmp;
-}
-
-void sortTeam(Team *&teams, int teamNum, cmpMethodTeam cmp)
-{
-	for (int i = 0; i < teamNum - 1; i++) // -1 or not does not influence.
+void sortTeam(Team *&teams, int teamNum, int rnk[], cmpMethodTeam cmp)
+{//排序索引1，teams[i]的排位是rnk[i]
+ //按teams从大到小排位，teams最大者rnk为0
+ //允许rnk相同
+	for (int i = 0; i < teamNum; i++) 
 	{
-		for (int j = 0; j + 1 < teamNum - i; j++)
+		rnk[i] = 0;
+	}
+	for (int i = 1; i < teamNum; i++)
+	{
+		for (int j = i - 1; j >= 0; j--)
 		{
-			if (cmp(teams[j], teams[j+1]) < 0)
+			int flag = cmp(teams[i], teams[j]);
+			if (flag == 0) continue;
+			else if (flag < 0)//新插入的teams[i]小，名次要加1
 			{
-				swapTeam(teams[j], teams[j+1]);
+				rnk[i]++;
+			}
+			else //新插入的大，前面比它小的，名次加1
+			{
+				rnk[j]++;
 			}
 		}
+	}
+}
+
+void League::setDispOrder(int arr[], int num, int odr[])
+{//排序索引2，排位为i的元素是arr[odr[i]]
+ //按arr从小到达排位，arr最小者的序号存于odr[0]中
+ //因odr的下标均不同，故arr元素无法并列
+	for (int i = 0; i < num; i++){
+		odr[i] = i;
+	}
+	//类似于插入排序，在插入比较的过程中不断地修改dispOrder数组  
+	for (int i = 1; i < num; i++)
+	{
+		int j = i;
+		int tmp = odr[i];
+		while (j > 0 && arr[tmp] < arr[odr[j - 1]])//新插入的arr[tmp]小，要往前排
+		{
+			odr[j] = odr[j - 1];
+			j--;
+		}
+		odr[j] = tmp;
 	}
 }
 
 void League::sortLeagueGDGF()
 {
 	Team * Teams = allTeams;
-	sortTeam(Teams, cur_team_num, cmpTeamPtsGdGf);
+	sortTeam(Teams, cur_team_num, rank, cmpTeamPtsGdGf);
 	//could have same rank.
-	rank[0] = 1;
-	int pre_i = 0;
-	for (int i = 1; i < cur_team_num; i++)
-	{
-		if (cmpTeamPtsGdGf(Teams[pre_i], Teams[i]) == 0) rank[i] = pre_i + 1;
-		else {
-			rank[i] = i + 1; 
-			pre_i = i;
-		}
-	}
-	returnRank2Team();
-}
-void League::sortLeagueCSL_Simple()
-{
-	updateSamePtsTeamSubStats();
-	Team * Teams = allTeams;
-	sortTeam(Teams, cur_team_num, cmpTeamCSL);
-	//could have same rank.
-	rank[0] = 1;
-	int pre_i = 0;
-	for (int i = 1; i < cur_team_num; i++)
-	{
-		if (cmpTeamCSL(Teams[pre_i], Teams[i]) == 0) rank[i] = pre_i + 1;
-		else {
-			rank[i] = i + 1;
-			pre_i = i;
-		}
-	}
-	returnRank2Team();
-}
-void League::updateSamePtsTeamSubStats()
-{
-	Team * Teams = allTeams;
-	sortTeam(Teams, cur_team_num, cmpTeam_onlyPts);
-	int SamePtsIdFirst = 0, SamePtsNum = 0, cur_pts = 0, i = 0;
-	while (i < cur_team_num)
-	{
-		cur_pts = Teams[i].getPoints();
-		SamePtsIdFirst = i;
-		SamePtsNum = 1;
-		for (int j = i + 1; j < cur_team_num; j++)
-		{
-			if (Teams[j].getPoints() == cur_pts) SamePtsNum++;
-			else break;
-		}
-		i = i + SamePtsNum;
-		if (SamePtsNum > 1)
-		{//update these teams
-			Team * subTeams = Teams + SamePtsIdFirst;
-			int gfor, gagainst, f;
-			for (int j = 0; j < SamePtsNum; j++)
-			{//get relative matches. 
-				for (int k = 0; k < SamePtsNum; k++)
-				{
-					if (j == k)continue;
-					subTeams[j].getMatchScoreByTwoTeam(subTeams[j].getTeamName(), \
-						subTeams[k].getTeamName(), gfor, gagainst, f);
-					if (f == 1)
-					{
-						subTeams[j].updateSubStats(gfor, gagainst);
-						subTeams[k].updateSubStats(gagainst, gfor);
-					}
-				}
-			}
-		}
-	}
-}
-void League::sortLeagueCSL()
-{
-	Team * Teams = allTeams;
-	sortTeam(Teams, cur_team_num, cmpTeam_onlyPts);
+	setDispOrder(rank, cur_team_num, dispOrder);
 	for (int i = 0; i < cur_team_num; i++)
 	{
-		rank[i] = i + 1;//rough rank
-		//Teams[i].setRank(i + 1);//returnRank2Team
+		rank[i]++;
 	}
-	int SamePtsIdFirst = 0, SamePtsNum = 0, cur_pts = 0, i = 0;
-	while (i < cur_team_num)
+	returnRank2Team();
+}
+
+void League::sortLeagueCSL_Simple()
+{
+	updateSamePtsTeamSubStats(false);//Do Not Disp subLeague
+	Team * Teams = allTeams;
+	sortTeam(Teams, cur_team_num, rank, cmpTeamCSL);
+	//could have same rank.
+	setDispOrder(rank,cur_team_num,dispOrder);
+	for (int i = 0; i < cur_team_num; i++)
 	{
-		cur_pts = Teams[i].getPoints();
-		SamePtsIdFirst = i;
+		rank[i]++;
+	}
+	returnRank2Team();
+}
+
+void League::sortLeagueCSL()
+{
+	updateSamePtsTeamSubStats(true);//Disp subLeague
+	Team * Teams = allTeams;
+	sortTeam(Teams, cur_team_num, rank, cmpTeamCSL);
+	//could have same rank.
+	setDispOrder(rank, cur_team_num, dispOrder);
+	for (int i = 0; i < cur_team_num; i++)
+	{
+		rank[i]++;
+	}
+	returnRank2Team();
+}
+
+void League::updateSamePtsTeamSubStats(bool DispSub)
+{
+	Team * Teams = allTeams;
+	int *SameId = new int[cur_team_num];
+	memset(SameId, -1, cur_team_num*sizeof(int));
+	int SamePtsNum = 0;
+
+	int *team_appear_id = new int[cur_team_num];
+	memset(team_appear_id, -1, cur_team_num*sizeof(int));
+	int team_appear_num = 0;
+
+	bool appeared = false;
+	for (int i = 0; i < cur_team_num; i++)
+	{
+		appeared = false;//if appeared, skip to next i;
+		for (int j = 0; j < team_appear_num; j++)
+		{
+			if (i == team_appear_id[j]) { appeared = true; break; }
+		}
+		if (appeared) continue;
+
+		memset(SameId, -1, cur_team_num*sizeof(int));
+		SameId[0] = i;
 		SamePtsNum = 1;
+		int cur_pts = Teams[i].getPoints();
 		for (int j = i + 1; j < cur_team_num; j++)
 		{
-			if (Teams[j].getPoints() == cur_pts) SamePtsNum++;
-			else break;
+			if (cur_pts == Teams[j].getPoints())
+			{
+				SameId[SamePtsNum] = j;
+				SamePtsNum++;
+				team_appear_id[team_appear_num] = j;
+				team_appear_num++;
+			}
 		}
-		i = i + SamePtsNum;
 		if (SamePtsNum > 1)
-		{//cmp these teams
-			Team * subTeams = Teams + SamePtsIdFirst;
+		{//update these teams which have same total points
+			if (DispSub)
+			{
+				cout << "--------------------" << endl;
+			}
 			int gfor, gagainst, f;
-			cout << "--------------------" << endl;
 			for (int j = 0; j < SamePtsNum; j++)
 			{//get relative matches. 
 				for (int k = 0; k < SamePtsNum; k++)
 				{
 					if (j == k)continue;
-					subTeams[j].getMatchScoreByTwoTeam(subTeams[j].getTeamName(), \
-						subTeams[k].getTeamName(), gfor, gagainst, f);
+					Teams[SameId[j]].getMatchScoreByTwoTeam(Teams[SameId[j]].getTeamName(), \
+						Teams[SameId[k]].getTeamName(), gfor, gagainst, f);
 					if (f == 1)
-					{//f: match num; it may be larger than 1 in Korean Classic League.
-						//Because it takes more than one match in a team's home against the same opponent.
-						subTeams[j].updateSubStats(gfor, gagainst);
-						subTeams[k].updateSubStats(gagainst, gfor);
-						//disp one match
-						cout << subTeams[j].getTeamName() << "\t" << gfor << "-" \
-							<< gagainst << "\t" << subTeams[k].getTeamName() << endl;
+					{
+						Teams[SameId[j]].updateSubStats(gfor, gagainst);
+						Teams[SameId[k]].updateSubStats(gagainst, gfor);
+						if (DispSub)
+						{
+							cout << Teams[SameId[j]].getTeamName() << "\t" << gfor << "-" \
+								<< gagainst << "\t" << Teams[SameId[k]].getTeamName() << endl;
+						}
 					}
 				}
 			}
-			cout << "--------------------" << endl;
-			//sort subLeague
-			sortTeam(subTeams, SamePtsNum, cmpTeamCSL);
-			//could have same rank.
-			//subTeams[0].setRank(SamePtsIdFirst + 1);
-			int pre_id = 0;
-			for (int id = 1; id < SamePtsNum; id++)
+			//end update these teams which have same total points
+			//disp subLeagueTable
+			if (DispSub)
 			{
-				if (cmpTeamCSL(subTeams[pre_id], subTeams[id]) == 0)
+				cout << "--------------------" << endl;
+				//sort subLeague
+				int *subRnk = new int[SamePtsNum];
+				Team* subTeams = new Team[SamePtsNum];
+				for (int j = 0; j < SamePtsNum; j++)
 				{
-					rank[SamePtsIdFirst + id] = SamePtsIdFirst + pre_id + 1;
-					//subTeams[id].setRank(SamePtsIdFirst + pre_id + 1);
+					subTeams[j] = Teams[SameId[j]];
 				}
-				else {
-					//subTeams[id].setRank(SamePtsIdFirst + id + 1);
-					pre_id = id;
+				sortTeam(subTeams, SamePtsNum, subRnk,cmpTeamCSL);
+				int *subOdr = new int[SamePtsNum];
+				setDispOrder(subRnk,SamePtsNum,subOdr);
+				
+				//disp subLeague
+				cout << "***************************-----Sub League-----********************************" << endl;
+				//cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
+				cout << "Rank\t" << "Team\t" << "Played\t"  \
+					<< "GF\t" << "GA\t" << "GD\t" << "Points\t" \
+					<< "RtPts\t" << "allGD\t" << "allGF" << endl;
+				for (int j = 0; j < SamePtsNum; j++)
+				{
+					cout << subRnk[subOdr[j]] + 1 << '\t';
+					Teams[SameId[subOdr[j]]].dispTeamSubData();//rank may be removed.
 				}
+				delete[]subTeams;
+				delete[]subRnk;
+				delete[]subOdr;
+				cout << "***************************--------------------********************************" << endl;
 			}
-			//disp subLeague
-			cout << "***************************-----Sub League-----********************************" << endl;
-			//cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
-			cout << "Rank\t" << "Team\t" << "Played\t"  \
-				<< "GF\t" << "GA\t" << "GD\t" << "Points\t" \
-				<< "RtPts\t" << "allGD\t" << "allGF" << endl;
-
-			for (int j = 0; j < SamePtsNum; j++)
-			{
-				cout << rank[SamePtsIdFirst + j] << '\t';
-				subTeams[j].dispTeamSubData();//rank may be removed.
-			}
-			cout << "***************************--------------------********************************" << endl;
+			//end disp subLeagueTable
 		}
-	}
-	returnRank2Team();
+	}	
+	delete[]SameId;
+	delete[]team_appear_id;
 }
 
 
@@ -428,10 +436,18 @@ int Team::getSubGF()const
 }
 void Team::dispTeamData()
 {
-	//cout<<"Rank\t"<<"Team\t"<<"Played\t"<<"Won\t"<<"Drawn\t"<<"Lost\t"<<"GF\t"<<"GA\t"<<"GD\t"<<"points"<<endl;
+	//cout<<"Rank\t"<<"Team\t"<<"Played\t"<<"Won\t"<<"Drawn\t"<<"Lost\t"<<"GF\t"<<"GA\t"<<"GD\t"<<"Points"<<endl;
 	cout << rank << "\t" << teamName << "\t" << MainStats.played << "\t" << MainStats.won <<\
 		"\t" << MainStats.drawn << "\t" << MainStats.lost << "\t" << MainStats.gf <<\
 		"\t" << MainStats.ga << "\t" << MainStats.gd << "\t" << MainStats.pts << endl;
+
+	//cslAllDataDisp
+	//cout << rank << "\t" << teamName << "\t" << MainStats.played << "\t" << MainStats.won << \
+	//	"/" << MainStats.drawn << "/" << MainStats.lost << "\t" << MainStats.gf << \
+	//	"/" << MainStats.ga  << "\t" << MainStats.pts\
+	//	<< "\t" << SubStats.won << "/" << SubStats.drawn << "/" << SubStats.lost \
+	//	<< "\t" << SubStats.gf << "/" << SubStats.ga \
+	//	<< "\t" << SubStats.pts << "\t" << ReserveTeamPts << endl;
 
 }
 void Team::dispTeamSubData()
@@ -582,10 +598,13 @@ void League::dispOneTeam(char* tname)
 void League::dispTable()
 {
 	cout << "**************************-----League Table-----*******************************" << endl;
-	cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t" << "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
-	for (int i = 0; i < cur_team_num; i++)
+	cout << "Rank\t" << "Team\t" << "Played\t" << "Won\t" << "Drawn\t" << "Lost\t"\
+		<< "GF\t" << "GA\t" << "GD\t" << "Points" << endl;
+	//cout << "Rank\t" << "Team\t" << "Played\t" << "W/D/L\t" << "GF/GA\t" << "Pts\t" \
+	//	<< "sW/D/L\t" << "sGF/GA\t" << "subPts\t" << "resPts" << endl; //cslAllDataDisp
+	for(int i = 0; i < cur_team_num; i++)
 	{
-		allTeams[i].dispTeamData();
+		allTeams[dispOrder[i]].dispTeamData();
 	}
 	cout << "***************************--------------------********************************" << endl;
 }
